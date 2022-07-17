@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SimpleWeatherApp.Api.Models;
+using SimpleWeatherApp.Api.Attributes;
+using Microsoft.Extensions.Options;
 
 namespace SimpleWeatherApp.Api.Controllers
 {
@@ -12,26 +14,30 @@ namespace SimpleWeatherApp.Api.Controllers
     [Route("api/[controller]")]
     public class WeatherController : ControllerBase
     {
-
+        private readonly WeatherSettings _weatherSettings;
         private readonly ILogger<WeatherController> _logger;
 
-        public WeatherController(ILogger<WeatherController> logger)
+        public WeatherController(ILogger<WeatherController> logger, IOptions<WeatherSettings> settingsOptions)
         {
             _logger = logger;
+            _weatherSettings = settingsOptions.Value;
         }
 
         [HttpGet]
-        public IEnumerable<Weather> Get()
+        [RequestLimit(MaxRequests = 5, TimeLimit = 60)]
+        public string Get(string city, string country)
         {
-            /*var rng = new Random();
-            return Enumerable.Range(1, 5).Select(index => new Weather
+            if(!string.IsNullOrEmpty(city) && !string.IsNullOrEmpty(country))
             {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = rng.Next(-20, 55),
-                Summary = Summaries[rng.Next(Summaries.Length)]
-            })
-            .ToArray();*/
-            return null;
+                string appId = _weatherSettings.APIKeyList[0];
+
+                string url = $"{_weatherSettings.BaseAddress}?q={city},{country}&appid={appId}";
+                
+                //TODO - make a call to above URL and retrieve data
+
+                return string.Empty;
+            }
+            return "hello";
         }
     }
 }
