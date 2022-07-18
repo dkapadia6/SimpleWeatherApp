@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SimpleWeatherApp.Api.Models;
+using SimpleWeatherApp.Api.Middleware;
 
 namespace SimpleWeatherApp.Api
 {
@@ -27,6 +28,7 @@ namespace SimpleWeatherApp.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<WeatherSettings>(Configuration.GetSection(nameof(WeatherSettings)));
+            services.AddDistributedMemoryCache();
             services.AddControllers();
         }
 
@@ -48,6 +50,8 @@ namespace SimpleWeatherApp.Api
             {
                 endpoints.MapControllers();
             });
+
+            app.UseRateLimiting();
         }
     }
 }

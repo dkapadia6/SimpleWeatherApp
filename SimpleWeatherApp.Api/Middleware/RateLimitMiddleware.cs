@@ -7,6 +7,7 @@ using SimpleWeatherApp.Api.Models;
 using SimpleWeatherApp.Api.Attributes;
 using SimpleWeatherApp.Api.Extensions;
 using System.Net;
+using Microsoft.AspNetCore.Builder;
 
 namespace SimpleWeatherApp.Api.Middleware
 {
@@ -54,6 +55,52 @@ namespace SimpleWeatherApp.Api.Middleware
                 throw new Exception("Error retrieving client details from the cache...", ex.InnerException);
             }
             
+        }
+
+        private async Task UpdateClientDetailStorage(string key, int maxRequests)
+        {
+            try
+            {
+                var clientDetails = await GetClientDetailsByKey(key);
+
+                if (clientDetails != null)
+                {
+                    clientDetails.LastSuccessfulReponseTime = DateTime.UtcNow;
+
+                    if (clientDetails.NumberOfRequestsCompleted == maxRequests)
+                        clientDetails.NumberOfRequestsCompleted = 1;
+                    else
+                        clientDetails.NumberOfRequestsCompleted++;
+
+                    await _cache.SetAsync(key, clientDetails.ToByteArray(), default);
+
+                }
+                else
+                {
+                    var newClientDetails = new ClientDetails
+                    {
+                        LastSuccessfulReponseTime = DateTime.UtcNow,
+                        NumberOfRequestsCompleted = 1
+                    };
+
+                    await _cache.SetAsync(key, newClientDetails.ToByteArray(), default);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error saving client details to the cache...", ex.InnerException);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extension method to expose the rate limiting middleware through IApplicationBuilder
+    /// </summary>
+    public static class RateLimitingMiddlewareExtensions
+    {
+        public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<RateLimitMiddleware>();
         }
     }
 }
