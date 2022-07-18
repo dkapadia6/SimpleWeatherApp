@@ -31,6 +31,13 @@ namespace SimpleWeatherApp.Api
             
             services.AddControllers();
             services.AddDistributedMemoryCache();
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins("http://localhost:5002", "https://localhost:5003");
+                });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -44,6 +51,8 @@ namespace SimpleWeatherApp.Api
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors();
 
             app.UseAuthorization();
 
