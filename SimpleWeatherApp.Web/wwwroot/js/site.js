@@ -24,6 +24,9 @@
                 type: "GET",
                 url: url,
                 data: { city: city, country: country},
+                beforeSend: function(xhr){
+                    xhr.setRequestHeader('x-api-key', '+oD4DRdFy0ynKJCQ8A8TKQ==');
+                }
             })
             .done(function(data, textStatus, jqXHR){
                 if(!CheckNullUndefined(data.message)){
@@ -32,16 +35,8 @@
                 }
             })
             .fail(function(jqXHR, textStatus, errorThrown){
-                //alert('Response: ' + jqXHR.responseText + '\nStatus: ' + jqXHR.status + '\nStatus text: ' + jqXHR.statusText);
-                if(jqXHR.status == 429){ //Too many requests
-                    $('#divResult').html("Unable to retrieve weather report as hourly limit of API consumption (5 times) has been exceeded. <br/>Please try again later.");
-                    $('#divResult').css("color", "red");
-                }
-
-                if(jqXHR.status == 400){ //Bad request
-                    $('#divResult').html("Unable to retrieve weather report due to a bad request.");
-                    $('#divResult').css("color", "red");
-                }
+                $('#divResult').html("Response code: " + jqXHR.status + "<br/>" + jqXHR.responseText);
+                $('#divResult').css("color", "red");
             });
         }
     });
