@@ -22,7 +22,7 @@ This app has two components included which are described as below:
 
 Using a command line, clone the project
 ```bash
-  git clone https://github.com/dkapadia6/WeatherApp.git
+  git clone https://github.com/dkapadia6/SimpleWeatherApp.git
 ```
 
 ### Build and Run API Service
