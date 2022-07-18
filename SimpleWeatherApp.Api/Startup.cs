@@ -28,8 +28,9 @@ namespace SimpleWeatherApp.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<WeatherSettings>(Configuration.GetSection(nameof(WeatherSettings)));
-            services.AddDistributedMemoryCache();
+            
             services.AddControllers();
+            services.AddDistributedMemoryCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -46,12 +47,14 @@ namespace SimpleWeatherApp.Api
 
             app.UseAuthorization();
 
+            app.UseRateLimiting();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
 
-            app.UseRateLimiting();
+
         }
     }
 }

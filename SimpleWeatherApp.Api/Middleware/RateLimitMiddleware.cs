@@ -8,6 +8,9 @@ using SimpleWeatherApp.Api.Attributes;
 using SimpleWeatherApp.Api.Extensions;
 using System.Net;
 using Microsoft.AspNetCore.Builder;
+using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 namespace SimpleWeatherApp.Api.Middleware
 {
@@ -25,20 +28,28 @@ namespace SimpleWeatherApp.Api.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var endpoint = context.GetEndpoint();
-            var requestLimit = endpoint?.Metadata.GetMetadata<RequestLimit>();
 
-            var key = "some key"; //TODO: Add API key
-            var clientDetails = await GetClientDetailsByKey(key); 
-
-            if(clientDetails != null
-                && DateTime.UtcNow < clientDetails.LastSuccessfulReponseTime.AddMinutes(requestLimit.TimeLimit)
-                && clientDetails.NumberOfRequestsCompleted == requestLimit.MaxRequests)
+            if (endpoint != null)
             {
-                context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
-                return;
+                var requestLimit = endpoint?.Metadata.GetMetadata<RequestLimit>();
+
+                if (requestLimit != null)
+                {
+                    var key = "some key"; //TODO: Add API key
+                    var clientDetails = await GetClientDetailsByKey(key);
+
+                    if (clientDetails != null
+                        && DateTime.UtcNow < clientDetails.LastSuccessfulReponseTime.AddMinutes(requestLimit.TimeLimit)
+                        && clientDetails.NumberOfRequestsCompleted == requestLimit.MaxRequests)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                        return;
+                    }
+
+                    await UpdateClientDetailStorage(key, requestLimit.MaxRequests);
+                }
             }
 
-            await UpdateClientDetailStorage(key, requestLimit.MaxRequests);
             await _next(context);
         }
 
@@ -46,16 +57,21 @@ namespace SimpleWeatherApp.Api.Middleware
         {
             try
             {
-                byte[] result = await _cache.GetAsync(key, default(CancellationToken));
-                var clientDetails = result.FromByteArray<ClientDetails>();
+                byte[] value = await _cache.GetAsync(key);
 
-                return clientDetails;
+                if (value is null)
+                    return null;
+                else
+                {
+                    var clientDetails = ByteArrayToObject(value) as ClientDetails;
+
+                    return clientDetails;
+                }
             }
             catch (Exception ex)
             {
                 throw new Exception("Error retrieving client details from the cache...", ex.InnerException);
             }
-            
         }
 
         private async Task UpdateClientDetailStorage(string key, int maxRequests)
@@ -73,8 +89,8 @@ namespace SimpleWeatherApp.Api.Middleware
                     else
                         clientDetails.NumberOfRequestsCompleted++;
 
-                    await _cache.SetAsync(key, clientDetails.ToByteArray(), default);
-
+                    byte[] value = ObjectToByteArray(clientDetails);
+                    await _cache.SetAsync(key, value);
                 }
                 else
                 {
@@ -84,13 +100,34 @@ namespace SimpleWeatherApp.Api.Middleware
                         NumberOfRequestsCompleted = 1
                     };
 
-                    await _cache.SetAsync(key, newClientDetails.ToByteArray(), default);
+                    byte[] value = ObjectToByteArray(newClientDetails);
+                    await _cache.SetAsync(key, value);
                 }
             }
             catch (Exception ex)
             {
                 throw new Exception("Error saving client details to the cache...", ex.InnerException);
             }
+        }
+
+        private byte[] ObjectToByteArray(object obj)
+        {
+            if (obj == null)
+                return null;
+            BinaryFormatter bf = new BinaryFormatter();
+            MemoryStream ms = new MemoryStream();
+            bf.Serialize(ms, obj);
+            return ms.ToArray();
+        }
+
+        private object ByteArrayToObject(byte[] arrBytes)
+        {
+            MemoryStream memStream = new MemoryStream();
+            BinaryFormatter binForm = new BinaryFormatter();
+            memStream.Write(arrBytes, 0, arrBytes.Length);
+            memStream.Seek(0, SeekOrigin.Begin);
+            object obj = (object)binForm.Deserialize(memStream);
+            return obj;
         }
     }
 
