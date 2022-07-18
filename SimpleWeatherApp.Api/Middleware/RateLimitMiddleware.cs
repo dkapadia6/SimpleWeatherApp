@@ -38,6 +38,7 @@ namespace SimpleWeatherApp.Api.Middleware
                 return;
             }
 
+            await UpdateClientDetailStorage(key, requestLimit.MaxRequests);
             await _next(context);
         }
 
