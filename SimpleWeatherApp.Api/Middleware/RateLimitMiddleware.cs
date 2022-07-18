@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Builder;
 using System.Text;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace SimpleWeatherApp.Api.Middleware
 {
@@ -18,6 +20,7 @@ namespace SimpleWeatherApp.Api.Middleware
     {
         private readonly IDistributedCache _cache;
         private readonly RequestDelegate _next;
+        private const string APIKEYHEADER = "x-api-key";
 
         public RateLimitMiddleware(IDistributedCache cache, RequestDelegate next)
         {
@@ -35,7 +38,25 @@ namespace SimpleWeatherApp.Api.Middleware
 
                 if (requestLimit != null)
                 {
-                    var key = "some key"; //TODO: Add API key
+                    //Check if API key has been provided as part of request headers
+                    if (!context.Request.Headers.TryGetValue(APIKEYHEADER, out var key))
+                    {
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsync("This request is unauthorised. API Key was not provided.");
+                        return;
+                    }
+
+                    //Check if API key provided matches with configured key in app settings
+                    var appSettings = context.RequestServices.GetRequiredService<IConfiguration>();
+                    var apiKey = appSettings.GetValue<string>(APIKEYHEADER);
+                    if (!apiKey.Equals(key))
+                    {
+                        context.Response.StatusCode = 401;
+                        await context.Response.WriteAsync("This request is unauthorised. Invalid API key.");
+                        return;
+                    }
+
+                    //Get client info from cache and check if rate limit is being breached
                     var clientDetails = await GetClientDetailsByKey(key);
 
                     if (clientDetails != null
@@ -43,6 +64,7 @@ namespace SimpleWeatherApp.Api.Middleware
                         && clientDetails.NumberOfRequestsCompleted == requestLimit.MaxRequests)
                     {
                         context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+                        await context.Response.WriteAsync("Unable to retrieve weather report as hourly limit of API consumption (5 times) has been exceeded. Please try again later.");
                         return;
                     }
 

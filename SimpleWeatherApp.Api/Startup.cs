@@ -35,7 +35,7 @@ namespace SimpleWeatherApp.Api
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:5002", "https://localhost:5003");
+                    policy.WithOrigins("http://localhost:5002", "https://localhost:5003").AllowAnyHeader().AllowAnyMethod();
                 });
             });
         }
@@ -62,8 +62,6 @@ namespace SimpleWeatherApp.Api
             {
                 endpoints.MapControllers();
             });
-
-
         }
     }
 }
