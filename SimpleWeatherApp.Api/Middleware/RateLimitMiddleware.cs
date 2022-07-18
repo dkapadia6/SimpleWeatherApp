@@ -30,7 +30,7 @@ namespace SimpleWeatherApp.Api.Middleware
             var clientDetails = await GetClientDetailsByKey(key); 
 
             if(clientDetails != null
-                && DateTime.UtcNow < clientDetails.LastSuccessfulReponseTime.AddSeconds(requestLimit.TimeLimit)
+                && DateTime.UtcNow < clientDetails.LastSuccessfulReponseTime.AddMinutes(requestLimit.TimeLimit)
                 && clientDetails.NumberOfRequestsCompleted == requestLimit.MaxRequests)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
