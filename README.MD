@@ -80,5 +80,22 @@ To test the solution, simply navigate to the web app URL where you will be prese
 - Enter the `city` and select the `country`, click on the button to return weather report
 - To test rate limiting, click on the button more than 5 times within 60 minutes and API should return a `429` response indicating rate limit has exceeded
 
+To run the unit tests, execute the following commands
+Navigate to the Test project directory
+```bash
+  cd SimpleWeatherApp.Tests
+```
+
+Build the Test project
+```bash
+  dotnet build
+```
+
+Run the tests
+
+```bash
+  dotnet test
+```
+
 ## Author
 - [@dkapadia6](https://www.github.com/dkapadia6)

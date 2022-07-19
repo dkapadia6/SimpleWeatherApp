@@ -41,6 +41,12 @@ namespace SimpleWeatherApp.Api.Controllers
                     {
                         client.BaseAddress = new Uri(_weatherSettings.BaseAddress);
                         var response = await client.GetAsync($"?q={city},{country}&appid={appId}");
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        {
+                            return Unauthorized();
+                        }
+
                         response.EnsureSuccessStatusCode();
 
                         var stringResult = await response.Content.ReadAsStringAsync();
